@@ -178,38 +178,6 @@ app.get('/api/apps/upcoming-and-available', async (req, res) => {
   }
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Cloudinary Media Route
 app.get('/api/media', async (req, res) => {
   try {
