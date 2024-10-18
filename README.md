@@ -1,6 +1,6 @@
 # CraftVerse Technologies
 
-![CraftVerse Logo](https://res.cloudinary.com/djgvrpf4x/image/upload/v1729270836/appverse-white-logo.f2f2983d56b90f6dd43b_esm0cc.png)  <!-- Replace with actual logo URL -->
+![CraftVerse Logo](https://res.cloudinary.com/djgvrpf4x/image/upload/w_1000,ar_1:1,c_fill,g_auto,e_art:hokusai/v1729270836/appverse-white-logo.f2f2983d56b90f6dd43b_esm0cc.png)  <!-- Replace with actual logo URL -->
 
 Welcome to CraftVerse Technologies! We are dedicated to revolutionizing the way you experience applications with our innovative App Store platform. Our mission is to provide users with a seamless and intuitive experience for discovering, downloading, and managing applications.
 
