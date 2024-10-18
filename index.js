@@ -122,7 +122,7 @@ const apps = {
 
 //appsdata 
 
-let appsData = [
+const appsData = [
   {
     id: 1,
     name: 'zomato',
@@ -135,8 +135,8 @@ let appsData = [
       'https://res.cloudinary.com/dzozq5wsi/image/upload/v1727202227/Group_119925_kquodp.png',
     ],
     reviews: [], // Stores user reviews with rating, title, description
-    installLink: 'https://play.google.com/store/apps/details?id=com.application.zomato&hl=en-US',
-    rating: 0, // Average rating initially
+    installLink: 'https://play.google.com/store/apps/details?id=com.application.zomato&hl=en-US'
+    // Average rating initially
   },
   // Add more apps similarly...
 ];
@@ -158,6 +158,48 @@ app.get('/api/apps/:appName', (req, res) => {
 
 // POST: Add review for a specific app
 // Route to add a review to an app
+
+
+
+
+
+app.get('/api/apps/:appName/reviews', async (req, res) => {
+  const { appName } = req.params;
+  const app = appsData.find(app => app.name.toLowerCase() === appName.toLowerCase());
+
+  if (app) {
+    try {
+      // Fetch all reviews from the database for the app
+      const reviews = await Review.find({ appId: appName.toLowerCase() });
+
+      // Calculate the average rating
+      const totalRatings = reviews.reduce((sum, review) => sum + review.rating, 0);
+      const averageRating = reviews.length > 0 ? (totalRatings / reviews.length).toFixed(1) : 0;
+
+      // Return the app info along with the reviews and calculated average rating
+      res.status(200).json({
+        ...app,
+        reviews: reviews.map(review => ({
+          rating: review.rating,
+          title: review.title,
+          description: review.description,
+          userId: review.userId,
+          username: review.username,
+          avatarUrl: review.avatarUrl,
+          createdAt: review.createdAt,
+        })),
+        rating: averageRating, // Add the calculated average rating here
+      });
+    } catch (err) {
+      console.error('Error fetching reviews:', err);
+      res.status(500).json({ message: 'Error fetching reviews' });
+    }
+  } else {
+    res.status(404).json({ message: 'App not found' });
+  }
+});
+
+
 app.post('/api/apps/:appName/review', ensureAuthenticated, async (req, res) => {
   const { appName } = req.params;
   const { rating, title, description } = req.body;
@@ -181,7 +223,7 @@ app.post('/api/apps/:appName/review', ensureAuthenticated, async (req, res) => {
 
           // Create a new review object
           const newReview = new Review({
-              appId: appName,
+              appId: appName.toLowerCase(), // Ensure it's stored in a consistent format
               rating: parseFloat(rating),
               title: title || '',
               description,
@@ -193,21 +235,25 @@ app.post('/api/apps/:appName/review', ensureAuthenticated, async (req, res) => {
           // Save the review to the database
           await newReview.save();
 
-          // Optionally, update the in-memory app's review list if you want to keep it updated
-          // This is where duplication can happen
-          app.reviews.push(newReview); // Only do this if you need the in-memory update
-          
-          // Recalculate average rating
-          const totalRatings = app.reviews.reduce((sum, review) => sum + review.rating, 0);
-          app.rating = (totalRatings / app.reviews.length).toFixed(1);
+          // Optionally, you can fetch all reviews to recalculate the average rating for response
+          const reviews = await Review.find({ appId: appName.toLowerCase() });
+          const totalRatings = reviews.reduce((sum, review) => sum + review.rating, 0);
+          const averageRating = (totalRatings / reviews.length).toFixed(1);
 
-          // Prepare the response to include the reviews (use the database or in-memory as needed)
-          const updatedAppResponse = {
-              ...app,
-              reviews: app.reviews, // Only include the in-memory reviews (or fetch them from the database)
-          };
-
-          res.status(201).json({ message: 'Review added successfully', app: updatedAppResponse });
+          // Prepare the response to include the updated average rating and reviews
+          res.status(201).json({
+              message: 'Review added successfully',
+              averageRating,
+              reviews: reviews.map(review => ({
+                  rating: review.rating,
+                  title: review.title,
+                  description: review.description,
+                  userId: review.userId,
+                  username: review.username,
+                  avatarUrl: review.avatarUrl,
+                  createdAt: review.createdAt,
+              })),
+          });
       } catch (err) {
           console.error(err);
           res.status(500).json({ message: 'Error retrieving user information' });
@@ -216,116 +262,6 @@ app.post('/api/apps/:appName/review', ensureAuthenticated, async (req, res) => {
       res.status(404).json({ message: 'App not found' });
   }
 });
-
-
-
-
-app.get('/api/apps/:appName/reviews', async (req, res) => {
-  const { appName } = req.params;
-
-  // Find the app in memory
-  const app = appsData.find(app => app.name.toLowerCase() === appName.toLowerCase());
-
-  if (app) {
-    try {
-      // Fetch all reviews from the database for the app
-      const reviews = await Review.find({ appId: appName.toLowerCase() });
-
-      // Return the app info along with the reviews
-      res.status(200).json({
-        ...app,
-       
-        reviews: reviews.map(review => ({
-          rating: review.rating,
-          title: review.title,
-          description: review.description,
-          userId: review.userId,
-          username: review.username,
-          avatarUrl: review.avatarUrl,
-          createdAt: review.createdAt
-        }))
-      });
-    } catch (err) {
-      console.error('Error fetching reviews:', err);
-      res.status(500).json({ message: 'Error fetching reviews' });
-    }
-  } else {
-    res.status(404).json({ message: 'App not found' });
-  }
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // Helper function to fetch app data and generate random ratings
 const getAppData = (category) => {
