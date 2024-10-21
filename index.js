@@ -60,8 +60,8 @@ const generateRandomRating = () => {
 
 const apps = {
   newReleased: [
-    { name:'zomato', icon: 'https://res.cloudinary.com/djgvrpf4x/image/upload/v1727203284/zomato.png' },
-    { name:'snapchat', icon: 'https://res.cloudinary.com/djgvrpf4x/image/upload/v1727458589/image_45_ba5eoa.png' },
+    {name:'zomato', icon: 'https://res.cloudinary.com/djgvrpf4x/image/upload/v1727203284/zomato.png' },
+    {name:'snapchat', icon: 'https://res.cloudinary.com/djgvrpf4x/image/upload/v1727458589/image_45_ba5eoa.png' },
     {name:'phonepe',icon:'https://res.cloudinary.com/djgvrpf4x/image/upload/v1727458590/image_46_lqdyhz.png'},
     {name:'Whatsapp',icon:'https://res.cloudinary.com/djgvrpf4x/image/upload/v1727458589/image_47_w1ddzf.png'},
     {name:'amazon prime video',icon:'https://res.cloudinary.com/djgvrpf4x/image/upload/v1727458589/image_48_smkpek.png'},
@@ -119,6 +119,15 @@ const apps = {
 
 };
 
+const getAppData = (category) => {
+  return apps[category].map(app => ({
+    name: app.name,
+    icon: cloudinary.url(app.icon), // Get the Cloudinary URL for the icon
+    rating: generateRandomRating(), // Assign a random rating
+  }));
+};
+
+
 
 //appsdata 
 
@@ -143,7 +152,7 @@ const appsData = [
 
 
 // Get app details by name
-app.get('/api/apps/:appName', (req, res) => {
+app.get('/api/appsdata/:appName', (req, res) => {
   const { appName } = req.params;
   const app = appsData.find(app => app.name.toLowerCase() === appName.toLowerCase());
 
@@ -163,7 +172,7 @@ app.get('/api/apps/:appName', (req, res) => {
 
 
 
-app.get('/api/apps/:appName/reviews', async (req, res) => {
+app.get('/api/appsdata/:appName/reviews', async (req, res) => {
   const { appName } = req.params;
   const app = appsData.find(app => app.name.toLowerCase() === appName.toLowerCase());
 
@@ -200,7 +209,7 @@ app.get('/api/apps/:appName/reviews', async (req, res) => {
 });
 
 
-app.post('/api/apps/:appName/review', ensureAuthenticated, async (req, res) => {
+app.post('/api/appsdata/:appName/review', ensureAuthenticated, async (req, res) => {
   const { appName } = req.params;
   const { rating, title, description } = req.body;
 
@@ -214,7 +223,7 @@ app.post('/api/apps/:appName/review', ensureAuthenticated, async (req, res) => {
 
   if (app) {
       try {
-          const userId = req.user.id; // User ID from token
+          const userId = req.user._id; // User ID from token
           const user = await User.findById(userId); // Fetch user details from the database
 
           if (!user) {
@@ -263,14 +272,10 @@ app.post('/api/apps/:appName/review', ensureAuthenticated, async (req, res) => {
   }
 });
 
+
+
 // Helper function to fetch app data and generate random ratings
-const getAppData = (category) => {
-  return apps[category].map(app => ({
-    name: app.name,
-    icon: cloudinary.url(app.icon), // Get the Cloudinary URL for the icon
-    rating: generateRandomRating(), // Assign a random rating
-  }));
-};
+
 
 // Routes setup
 app.use('/auth', AuthRouter);
@@ -278,11 +283,9 @@ app.use('/products', ProductRouter);
 app.use('/appdetails', mediaRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/user', userRoutes);
-app.use('/api/location', locationRoutes); // For country, state, and city routes
+app.use('/api/location', locationRoutes); 
 
-// API Endpoints for categorized apps
 
-// New Released Apps
 app.get('/api/apps/new-released', (req, res) => {
   res.json(getAppData('newReleased'));
 });
@@ -325,6 +328,10 @@ app.get('/api/apps/upcoming-and-available', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
+
+
 
 // Cloudinary Media Route
 app.get('/api/media', async (req, res) => {
