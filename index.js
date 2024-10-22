@@ -15,7 +15,8 @@ const locationRoutes = require('./Routes/locationRoutes');
 const cloudinary = require('cloudinary').v2;
 const ensureAuthenticated  = require('./Middlewares/Auth');
 const Review = require('./Models/Review'); 
-const User=require('./Models/User');// Adjust the path according to your project structure
+const User=require('./Models/User');
+const App = require('./Models/App');// Adjust the path according to your project structure
 
 
 // Load environment variables
@@ -129,37 +130,24 @@ const getAppData = (category) => {
 
 
 
-//appsdata 
 
-const appsData = [
-  {
-    id: 1,
-    name: 'zomato',
-    icon: 'https://res.cloudinary.com/djgvrpf4x/image/upload/v1727203284/zomato.png',
-    description: 'Zomato is a comprehensive food discovery and restaurant review app designed to help users find and explore dining options. It features detailed restaurant listings, user reviews, menus, and photos to assist in making informed dining choices. Zomato also offers features for online food ordering and table reservations, making it a versatile tool for food enthusiasts and those seeking convenient dining solutions.',
-    mediaUrls: [
-      'https://res.cloudinary.com/dzozq5wsi/image/upload/v1727202383/Group_119923_lle4wh.png',
-      'https://res.cloudinary.com/dzozq5wsi/image/upload/v1727202282/Group_119922_edatce.png',
-      'https://res.cloudinary.com/dzozq5wsi/image/upload/v1727202227/Group_119924_fwb6zh.png',
-      'https://res.cloudinary.com/dzozq5wsi/image/upload/v1727202227/Group_119925_kquodp.png',
-    ],
-    reviews: [], // Stores user reviews with rating, title, description
-    installLink: 'https://play.google.com/store/apps/details?id=com.application.zomato&hl=en-US'
-    // Average rating initially
-  },
-  // Add more apps similarly...
-];
+
+
 
 
 // Get app details by name
-app.get('/api/appsdata/:appName', (req, res) => {
+app.get('/api/appsdata/:appName', async (req, res) => {
   const { appName } = req.params;
-  const app = appsData.find(app => app.name.toLowerCase() === appName.toLowerCase());
-
-  if (app) {
-    res.status(200).json(app);
-  } else {
-    res.status(404).json({ message: 'App not found' });
+  try {
+    const app = await App.findOne({ name: appName.toLowerCase() });
+    if (app) {
+      res.status(200).json(app);
+    } else {
+      res.status(404).json({ message: 'App not found' });
+    }
+  } catch (err) {
+    console.error('Error fetching app data:', err);
+    res.status(500).json({ message: 'Error fetching app data' });
   }
 });
 
@@ -171,106 +159,109 @@ app.get('/api/appsdata/:appName', (req, res) => {
 
 
 
-
 app.get('/api/appsdata/:appName/reviews', async (req, res) => {
   const { appName } = req.params;
-  const app = appsData.find(app => app.name.toLowerCase() === appName.toLowerCase());
 
-  if (app) {
-    try {
-      // Fetch all reviews from the database for the app
-      const reviews = await Review.find({ appId: appName.toLowerCase() });
+  try {
+    // Verify that the appName exists in the appsdata collection
+    const app = await App.findOne({ name: appName.toLowerCase() });
 
-      // Calculate the average rating
-      const totalRatings = reviews.reduce((sum, review) => sum + review.rating, 0);
-      const averageRating = reviews.length > 0 ? (totalRatings / reviews.length).toFixed(1) : 0;
-
-      // Return the app info along with the reviews and calculated average rating
-      res.status(200).json({
-        ...app,
-        reviews: reviews.map(review => ({
-          rating: review.rating,
-          title: review.title,
-          description: review.description,
-          userId: review.userId,
-          username: review.username,
-          avatarUrl: review.avatarUrl,
-          createdAt: review.createdAt,
-        })),
-        rating: averageRating, // Add the calculated average rating here
-      });
-    } catch (err) {
-      console.error('Error fetching reviews:', err);
-      res.status(500).json({ message: 'Error fetching reviews' });
+    if (!app) {
+      return res.status(404).json({ message: 'App not found in database' });
     }
-  } else {
-    res.status(404).json({ message: 'App not found' });
+
+    // If appName is valid, proceed to fetch the reviews
+    const reviews = await Review.find({ appId: appName.toLowerCase() });
+    const totalRatings = reviews.reduce((sum, review) => sum + review.rating, 0);
+    const averageRating = reviews.length > 0 ? (totalRatings / reviews.length).toFixed(1) : 0;
+
+    res.status(200).json({
+      reviews: reviews.map(review => ({
+        rating: review.rating,
+        title: review.title,
+        description: review.description,
+        userId: review.userId,
+        username: review.username,
+        avatarUrl: review.avatarUrl,
+        createdAt: review.createdAt,
+      })),
+      averageRating,
+    });
+  } catch (err) {
+    console.error('Error fetching reviews:', err);
+    res.status(500).json({ message: 'Error fetching reviews' });
   }
 });
 
 
-app.post('/api/appsdata/:appName/review', ensureAuthenticated, async (req, res) => {
-  const { appName } = req.params;
-  const { rating, title, description } = req.body;
 
-  // Check for rating and description (title is optional)
-  if (!rating || rating < 1 || rating > 5 || !description) {
-      return res.status(400).json({ message: 'Rating between 1-5 and description are required' });
-  }
+    // Fetch reviews for the app from the database
 
-  // Find the app by its name
-  const app = appsData.find(app => app.name.toLowerCase() === appName.toLowerCase());
 
-  if (app) {
-      try {
-          const userId = req.user._id; // User ID from token
-          const user = await User.findById(userId); // Fetch user details from the database
 
-          if (!user) {
-              return res.status(404).json({ message: 'User not found' });
-          }
-
-          // Create a new review object
-          const newReview = new Review({
-              appId: appName.toLowerCase(), // Ensure it's stored in a consistent format
-              rating: parseFloat(rating),
-              title: title || '',
-              description,
-              userId: user._id,
-              username: user.name,
-              avatarUrl: user.avatarUrl || '',
-          });
-
-          // Save the review to the database
-          await newReview.save();
-
-          // Optionally, you can fetch all reviews to recalculate the average rating for response
-          const reviews = await Review.find({ appId: appName.toLowerCase() });
-          const totalRatings = reviews.reduce((sum, review) => sum + review.rating, 0);
-          const averageRating = (totalRatings / reviews.length).toFixed(1);
-
-          // Prepare the response to include the updated average rating and reviews
-          res.status(201).json({
-              message: 'Review added successfully',
-              averageRating,
-              reviews: reviews.map(review => ({
-                  rating: review.rating,
-                  title: review.title,
-                  description: review.description,
-                  userId: review.userId,
-                  username: review.username,
-                  avatarUrl: review.avatarUrl,
-                  createdAt: review.createdAt,
-              })),
-          });
-      } catch (err) {
-          console.error(err);
-          res.status(500).json({ message: 'Error retrieving user information' });
+    app.post('/api/appsdata/:appName/review', ensureAuthenticated, async (req, res) => {
+      const { appName } = req.params;
+      const { rating, title, description } = req.body;
+    
+      if (!rating || rating < 1 || rating > 5 || !description) {
+        return res.status(400).json({ message: 'Rating between 1-5 and description are required' });
       }
-  } else {
-      res.status(404).json({ message: 'App not found' });
-  }
-});
+    
+      try {
+        // Verify that the appName exists in the appsdata collection
+        const app = await App.findOne({ name: appName.toLowerCase() });
+    
+        if (!app) {
+          return res.status(404).json({ message: 'App not found in database' });
+        }
+    
+        // If appName is valid, proceed to add the review
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+    
+        if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+    
+        const newReview = {
+          appId: appName.toLowerCase(),
+          rating: parseFloat(rating),
+          title: title || '',
+          description,
+          userId: user._id,
+          username: user.name,
+          avatarUrl: user.avatarUrl || '',
+          createdAt: new Date(),
+        };
+    
+        // Save the review in the database
+        await Review.create(newReview);
+    
+        // Fetch all reviews to recalculate the average rating
+        const reviews = await Review.find({ appId: appName.toLowerCase() });
+        const totalRatings = reviews.reduce((sum, review) => sum + review.rating, 0);
+        const averageRating = (totalRatings / reviews.length).toFixed(1);
+    
+        res.status(201).json({
+          message: 'Review added successfully',
+          averageRating,
+          reviews: reviews.map(review => ({
+            rating: review.rating,
+            title: review.title,
+            description: review.description,
+            userId: review.userId,
+            username: review.username,
+            avatarUrl: review.avatarUrl,
+            createdAt: review.createdAt,
+          })),
+        });
+      } catch (err) {
+        console.error('Error adding review:', err);
+        res.status(500).json({ message: 'Error adding review' });
+      }
+    });
+    
+
 
 
 
