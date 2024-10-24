@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
         pass: process.env.EMAIL_PASS
     }
 });
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+// Import jsonwebtoken
 
 const signup = async (req, res) => {
     try {
@@ -27,17 +27,26 @@ const signup = async (req, res) => {
         });
       }
       
+      // Create a new user
       const newUser = new UserModel({ name, email, password });
       newUser.password = await bcrypt.hash(password, 10);
       await newUser.save();
 
-      // Return the _id along with the signup success message
+      // Generate a token (you should keep your JWT_SECRET in your .env file)
+      const token = jwt.sign(
+        { _id: newUser._id, email: newUser.email }, // Payload data
+        process.env.JWT_SECRET, // Secret key
+        { expiresIn: '1h' } // Token expiration time (e.g., 1 hour)
+      );
+
+      // Return the _id along with the signup success message and token
       res.status(201).json({
         message: "Signup successfully",
         success: true,
         _id: newUser._id,   // Include the MongoDB _id in the response
         name: newUser.name,
-        email: newUser.email
+        email: newUser.email,
+        token  // Include the generated token
       });
       
     } catch (err) {
@@ -66,7 +75,7 @@ const login = async (req, res) => {
         const jwtToken = jwt.sign(
             { email: user.email, _id: user._id },
             process.env.JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: '7d' }
         );
 
         // Return the _id along with the other fields
