@@ -96,7 +96,6 @@ const login = async (req, res) => {
 
 
 
-
 // Forgot Password handler
 const forgotPassword = async (req, res) => {
     try {
@@ -235,3 +234,6 @@ module.exports = {
     googleAuth
   
 };
+
+
+

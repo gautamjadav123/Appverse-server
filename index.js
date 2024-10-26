@@ -322,8 +322,6 @@ app.get('/api/apps/upcoming-and-available', async (req, res) => {
 
 
 
-
-
 // Cloudinary Media Route
 app.get('/api/media', async (req, res) => {
   try {
@@ -348,3 +346,5 @@ app._router.stack.forEach((r) => {
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+
