@@ -4,12 +4,12 @@ const router = express.Router();
 const ensureAuthenticated = require('../Middlewares/Auth'); // Import authentication middleware
 const User = require('../Models/User'); 
 
-// Route to get user profile details by ID
-router.get('/profile/:userid', ensureAuthenticated, async (req, res) => {
+// Route to get user profile details of the logged-in user
+router.get('/profile', ensureAuthenticated, async (req, res) => {
     try {
-        const { userid } = req.params;
+        const userId = req.user._id; // Use the logged-in user's ID from the authentication middleware
 
-        const user = await User.findById(userid).select('-password'); // Fetch the user without the password
+        const user = await User.findById(userId).select('-password'); // Fetch the user without the password
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -28,7 +28,7 @@ router.get('/profile/:userid', ensureAuthenticated, async (req, res) => {
             postalCode: user.postalCode,
             dob: user.dob,
             mobile: user.mobileNo,
-            avatar: user.avatar
+            avatar: avatar // Use the generated or user-defined avatar
         });
     } catch (err) {
         console.error(err);

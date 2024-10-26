@@ -11,7 +11,13 @@ const appSchema = new mongoose.Schema({
   faqs: [{
     question: { type: String, required: true },
     answer: { type: String, required: true }
-  }]// Reference to reviews
+  }],
+  supportResponse: { 
+    type: String,
+    required: true // Make it required to ensure each app has its own support message
+  }
+ 
+  // Reference to reviews
 });
 
 const App = mongoose.model('App', appSchema);
