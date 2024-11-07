@@ -16,7 +16,10 @@ const cloudinary = require('cloudinary').v2;
 const ensureAuthenticated  = require('./Middlewares/Auth');
 const Review = require('./Models/Review'); 
 const User=require('./Models/User');
-const App = require('./Models/App');// Adjust the path according to your project structure
+const App = require('./Models/App');
+const homeRoutes = require('./Routes/Game_section_home_routes');
+const gameRoutes = require('./Routes/gameRoutes'); //gamehome
+// Adjust the path according to your project structure
 
 
 // Load environment variables
@@ -275,6 +278,8 @@ app.use('/appdetails', mediaRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/location', locationRoutes); 
+app.use('/api/home', homeRoutes);
+app.use('/api/game',gameRoutes);
 
 
 app.get('/api/apps/new-released', (req, res) => {
@@ -346,5 +351,7 @@ app._router.stack.forEach((r) => {
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+
 
 
