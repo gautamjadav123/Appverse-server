@@ -18,7 +18,8 @@ const Review = require('./Models/Review');
 const User=require('./Models/User');
 const App = require('./Models/App');
 const homeRoutes = require('./Routes/Game_section_home_routes');
-const gameRoutes = require('./Routes/gameRoutes'); //gamehome
+const gameRoutes = require('./Routes/gameRoutes');
+const vrGameRoutes = require('./Routes/vrGameRoutes'); 
 // Adjust the path according to your project structure
 
 
@@ -280,6 +281,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/location', locationRoutes); 
 app.use('/api/home', homeRoutes);
 app.use('/api/game',gameRoutes);
+app.use('/api/vrgames', vrGameRoutes);
 
 
 app.get('/api/apps/new-released', (req, res) => {
